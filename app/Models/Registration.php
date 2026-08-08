@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
+
+#[Fillable(['competition_id', 'participant_id', 'school_type', 'npp', 'label', 'tie_break_order'])]
+class Registration extends Model
+{
+    use HasUuids;
+
+    protected function casts(): array
+    {
+        return [
+            'tie_break_order' => 'integer',
+        ];
+    }
+
+    /** @return BelongsTo<Competition, $this> */
+    public function competition(): BelongsTo
+    {
+        return $this->belongsTo(Competition::class);
+    }
+
+    /** @return BelongsTo<Participant, $this> */
+    public function participant(): BelongsTo
+    {
+        return $this->belongsTo(Participant::class);
+    }
+
+    /** @return HasMany<Evaluation, $this> */
+    public function evaluations(): HasMany
+    {
+        return $this->hasMany(Evaluation::class);
+    }
+
+    public function displayName(): string
+    {
+        return $this->participant?->school_name ?? (string) $this->label;
+    }
+
+    /**
+     * Urutkan registrasi untuk peringkat: total nilai desc, lalu urutan tie-break
+     * manual dari admin (jika ada), lalu alfabetis sebagai fallback deterministik.
+     * Dipakai bersama oleh Live Rank & Rekap agar urutannya selalu konsisten.
+     *
+     * @param  Collection<int, self>  $registrations  Sudah dimuat dengan total_score (dari withSum).
+     * @return Collection<int, self>
+     */
+    public static function sortForRanking(Collection $registrations): Collection
+    {
+        return $registrations
+            ->sortBy([
+                fn (self $a, self $b) => ($b->total_score ?? 0) <=> ($a->total_score ?? 0),
+                fn (self $a, self $b) => ($a->tie_break_order ?? PHP_INT_MAX) <=> ($b->tie_break_order ?? PHP_INT_MAX),
+                fn (self $a, self $b) => $a->displayName() <=> $b->displayName(),
+            ])
+            ->values();
+    }
+}

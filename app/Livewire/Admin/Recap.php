@@ -1,0 +1,282 @@
+<?php
+
+namespace App\Livewire\Admin;
+
+use App\Models\Competition;
+use App\Models\Registration;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Url;
+use Livewire\Component;
+
+class Recap extends Component
+{
+    public const SCHOOL_TYPES = ['SD', 'SMP', 'SMA'];
+
+    #[Url]
+    public string $school_type = '';
+
+    #[Url]
+    public bool $include_notes = false;
+
+    public string $competitionId;
+
+    public ?string $tieClusterKey = null;
+
+    /** @var array<string, int> */
+    public array $tiePositions = [];
+
+    public function mount(string $competitionId): void
+    {
+        $this->competitionId = $competitionId;
+
+        if ($this->school_type !== '' && ! in_array($this->school_type, self::SCHOOL_TYPES, true)) {
+            $this->school_type = '';
+        }
+    }
+
+    public function downloadPdf()
+    {
+        $competition = $this->competition();
+
+        abort_unless($competition, 404);
+
+        $pdf = Pdf::loadView('pdf.recap', [
+            'competition' => $competition,
+            'rows' => $this->rows($competition),
+            'school_type' => $this->school_type,
+            'include_notes' => $this->include_notes,
+            'logo' => $this->logoDataUri(),
+            'maskIdentity' => $competition->hide_identity,
+        ])->setPaper('a4', 'landscape');
+
+        $this->stampFooter($pdf);
+
+        $filename = collect([
+            Str::slug($competition->name, '_'),
+            Str::slug($this->school_type ?: 'semua', '_'),
+            now()->format('Ymd_His'),
+        ])->implode('_').'.pdf';
+
+        return response()->streamDownload(
+            fn () => print ($pdf->output()),
+            $filename
+        );
+    }
+
+    /**
+     * Menulis footer (kiri: penyelenggara, kanan: waktu cetak + nomor halaman) langsung
+     * ke canvas PDF. Nomor halaman total ({PAGE_COUNT}) hanya akurat lewat
+     * Canvas::page_text(), karena counter(pages) via CSS tidak didukung dompdf
+     * pada elemen fixed.
+     */
+    private function stampFooter(\Barryvdh\DomPDF\PDF $pdf): void
+    {
+        $pdf->render();
+
+        $canvas = $pdf->getCanvas();
+        $fontMetrics = $pdf->getFontMetrics();
+        $font = $fontMetrics->getFont('DejaVu Sans');
+        $color = [0.5, 0.5, 0.5];
+        $margin = 24;
+        $size = 7;
+
+        $left = __(':owner &mdash; :app (:url)', [
+            'owner' => config('app.owner'),
+            'app' => config('app.name'),
+            'url' => config('app.url'),
+        ]);
+        $left = html_entity_decode($left, ENT_QUOTES);
+
+        $printedAt = now()->translatedFormat('d M Y H:i');
+        $totalPages = $canvas->get_page_count();
+
+        $right = html_entity_decode(
+            __('Dicetak :time &mdash; Halaman {PAGE_NUM} dari {PAGE_COUNT}', ['time' => $printedAt]),
+            ENT_QUOTES
+        );
+
+        // {PAGE_NUM}/{PAGE_COUNT} baru disubstitusi dompdf saat output; lebar diukur
+        // memakai skenario terlebar (nomor halaman = total halaman) agar teks tetap
+        // rata kanan meski nanti digit nomor halaman berbeda-beda per halaman.
+        $widestRight = html_entity_decode(
+            __('Dicetak :time &mdash; Halaman :page dari :total', [
+                'time' => $printedAt,
+                'page' => $totalPages,
+                'total' => $totalPages,
+            ]),
+            ENT_QUOTES
+        );
+
+        $pageWidth = $canvas->get_width();
+        $pageHeight = $canvas->get_height();
+        $bottomOffset = 20;
+        $rightWidth = $fontMetrics->getTextWidth($widestRight, $font, $size);
+
+        $canvas->page_text($margin, $pageHeight - $bottomOffset, $left, $font, $size, $color);
+        $canvas->page_text($pageWidth - $margin - $rightWidth, $pageHeight - $bottomOffset, $right, $font, $size, $color);
+    }
+
+    public function openTieOrder(string $schoolType, int $totalScore): void
+    {
+        $this->tieClusterKey = $schoolType.'|'.$totalScore;
+
+        $this->tiePositions = $this->clusterRegistrations($schoolType, $totalScore)
+            ->mapWithKeys(fn (Registration $registration, int $index) => [
+                $registration->id => $registration->tie_break_order ?? ($index + 1),
+            ])
+            ->all();
+    }
+
+    public function saveTieOrder(): void
+    {
+        [$schoolType, $totalScore] = $this->parseClusterKey();
+        $registrations = $this->clusterRegistrations($schoolType, $totalScore);
+
+        $positions = collect($this->tiePositions)
+            ->only($registrations->pluck('id'))
+            ->map(fn ($value) => (int) $value);
+
+        $count = $registrations->count();
+
+        if ($positions->contains(fn (int $value) => $value < 1 || $value > $count)) {
+            $this->addError('tiePositions', __('Urutan harus antara 1 dan :count.', ['count' => $count]));
+
+            return;
+        }
+
+        if ($positions->unique()->count() !== $positions->count()) {
+            $this->addError('tiePositions', __('Urutan tidak boleh sama (duplikat) dalam satu kelompok.'));
+
+            return;
+        }
+
+        foreach ($positions as $id => $position) {
+            Registration::whereKey($id)->update(['tie_break_order' => $position]);
+        }
+
+        $this->closeTieOrder();
+    }
+
+    public function resetTieOrder(): void
+    {
+        [$schoolType, $totalScore] = $this->parseClusterKey();
+
+        Registration::whereIn('id', $this->clusterRegistrations($schoolType, $totalScore)->pluck('id'))
+            ->update(['tie_break_order' => null]);
+
+        $this->closeTieOrder();
+    }
+
+    public function closeTieOrder(): void
+    {
+        $this->reset(['tieClusterKey', 'tiePositions']);
+    }
+
+    /** @return array{0: string, 1: int} */
+    private function parseClusterKey(): array
+    {
+        [$schoolType, $totalScore] = explode('|', $this->tieClusterKey, 2);
+
+        return [$schoolType, (int) $totalScore];
+    }
+
+    private function clusterRegistrations(string $schoolType, int $totalScore): Collection
+    {
+        return $this->competition()->registrations()
+            ->with('participant')
+            ->where('school_type', $schoolType)
+            ->withSum('evaluations as total_score', 'score')
+            ->get()
+            ->filter(fn (Registration $registration) => (int) ($registration->total_score ?? 0) === $totalScore)
+            ->sortBy(fn (Registration $registration) => $registration->tie_break_order ?? PHP_INT_MAX)
+            ->values();
+    }
+
+    public function render()
+    {
+        $competition = $this->competition();
+
+        $tieCluster = $this->tieClusterKey
+            ? $this->clusterRegistrations(...$this->parseClusterKey())
+            : null;
+
+        return view('livewire.admin.recap', [
+            'competition' => $competition,
+            'rows' => $competition ? $this->rows($competition) : collect(),
+            'tieCluster' => $tieCluster,
+            'maskIdentity' => $competition && $competition->hide_identity,
+        ]);
+    }
+
+    private function competition(): ?Competition
+    {
+        return Competition::with('criteria.judges')->find($this->competitionId);
+    }
+
+    private function logoDataUri(): ?string
+    {
+        $path = resource_path('images/logo.png');
+
+        if (! is_file($path)) {
+            return null;
+        }
+
+        return 'data:image/png;base64,'.base64_encode(file_get_contents($path));
+    }
+
+    private function rows(Competition $competition): Collection
+    {
+        $registrations = $competition->registrations()
+            ->with(['participant', 'evaluations.criterion', 'evaluations.judge'])
+            ->when($this->school_type, fn ($query) => $query->where('school_type', $this->school_type))
+            ->withSum('evaluations as total_score', 'score')
+            ->get();
+
+        $registrations = Registration::sortForRanking($registrations);
+
+        $clusterSizes = $registrations
+            ->groupBy(fn (Registration $registration) => $registration->school_type.'|'.((int) ($registration->total_score ?? 0)))
+            ->map->count();
+
+        return $registrations->map(function (Registration $registration) use ($competition, $clusterSizes) {
+            $evaluationsByCriterion = $registration->evaluations->groupBy('criterion_id');
+
+            $criteriaScores = $competition->criteria->mapWithKeys(function ($criterion) use ($evaluationsByCriterion, $registration) {
+                $applicable = in_array($registration->school_type, $criterion->school_types, true);
+                $evaluations = $evaluationsByCriterion->get($criterion->id, collect());
+                $expected = $applicable
+                    ? $criterion->judges->where('pivot.school_type', $registration->school_type)->count()
+                    : 0;
+
+                $notes = $evaluations
+                    ->filter(fn ($evaluation) => filled($evaluation->notes))
+                    ->map(fn ($evaluation) => [
+                        'judge' => $evaluation->judge->name,
+                        'text' => $evaluation->notes,
+                    ])
+                    ->values();
+
+                return [$criterion->id => [
+                    'applicable' => $applicable,
+                    'score' => $evaluations->sum('score'),
+                    'submitted' => $evaluations->count(),
+                    'expected' => $expected,
+                    'notes' => $notes,
+                ]];
+            });
+
+            return (object) [
+                'registration' => $registration,
+                'npp' => $registration->npp,
+                'criteria_scores' => $criteriaScores,
+                'total_score' => $registration->total_score ?? 0,
+                'is_complete' => $criteriaScores->filter(fn ($score) => $score['applicable'])->every(
+                    fn ($score) => $score['expected'] > 0 && $score['submitted'] >= $score['expected']
+                ),
+                'is_tied' => $clusterSizes->get($registration->school_type.'|'.((int) ($registration->total_score ?? 0)), 0) > 1,
+            ];
+        });
+    }
+}
