@@ -106,6 +106,14 @@
                                             interim += transcript;
                                         }
                                     }
+                                    // Kadang, dalam event yang sama, entri interim yang tersisa
+                                    // hanya menggemakan teks yang baru saja dikunci final di atas
+                                    // (belum sempat dibersihkan mesin pengenal) — kalau dibiarkan,
+                                    // hasilnya jadi 'kalimat kalimat' dobel. Interim yang begini
+                                    // diabaikan.
+                                    if (interim && (interim === this.finalText || this.finalText.endsWith(interim))) {
+                                        interim = '';
+                                    }
                                     this.applyText([this.baseText, [this.finalText, interim].filter(Boolean).join(' ')].filter(Boolean).join(' '));
                                 };
                                 this.rec.onend = () => this.stopListening();
