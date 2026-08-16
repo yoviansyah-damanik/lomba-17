@@ -6,6 +6,7 @@ use App\Models\Competition;
 use App\Models\Registration;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Session;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
@@ -17,6 +18,7 @@ class ParticipantLookup extends Component
     #[Validate('required|string', as: 'NPP')]
     public string $npp = '';
 
+    #[Session]
     #[Validate('required|in:SD,SMP,SMA', as: 'jenis sekolah')]
     public string $school_type = 'SD';
 
@@ -67,7 +69,6 @@ class ParticipantLookup extends Component
     public function resetSearch(): void
     {
         $this->reset(['npp', 'registration', 'searched']);
-        $this->school_type = 'SD';
     }
 
     #[On('evaluation-saved')]
