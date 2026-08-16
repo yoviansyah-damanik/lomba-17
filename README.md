@@ -1,46 +1,59 @@
-# Penilaian Lomba
+<p align="center">
+  <img src="resources/images/logo.png" alt="Logo Penilaian Lomba" width="120">
+</p>
 
-Aplikasi web mobile-friendly untuk mengelola penilaian lomba antar sekolah (SD/SMP/SMA) — mulai dari pendaftaran peserta, penugasan juri per kriteria, proses penilaian oleh juri, hingga papan peringkat live dan rekap nilai. Dibangun untuk **Kwarcab Kota Padangsidimpuan**.
+<h1 align="center">Penilaian Lomba</h1>
 
-## Modul Aplikasi
+<p align="center">
+  Aplikasi web mobile-friendly untuk mengelola penilaian lomba antar sekolah —<br>
+  dari pendaftaran peserta, penugasan juri, penilaian di lapangan, hingga papan peringkat live dan rekap nilai.
+</p>
 
-### Dashboard
-Ringkasan aktivitas untuk admin (jumlah peserta per jenjang, tren penilaian masuk 7 hari terakhir, progres tiap lomba dan tiap juri) dan untuk juri (daftar kriteria miliknya beserta progres penilaian).
+<p align="center">
+  <img src="https://img.shields.io/badge/Laravel-13-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 13">
+  <img src="https://img.shields.io/badge/Livewire-4-4E56A6?style=flat-square&logo=livewire&logoColor=white" alt="Livewire 4">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS">
+  <img src="https://img.shields.io/badge/PHP-8.3%2B-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.3+">
+  <img src="https://img.shields.io/badge/MySQL%2FMariaDB-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL/MariaDB">
+</p>
 
-### Lomba & Kriteria (Admin)
-- CRUD lomba: nama, jadwal mulai/selesai (format 24 jam), status Live Rank (buka/tutup) dan opsi sembunyikan identitas peserta di papan peringkat.
-- CRUD kriteria per lomba, dengan **jenjang sekolah** yang bisa dipilih per kriteria (SD/SMP/SMA) dan **penugasan juri khusus per jenjang** — satu kriteria bisa dinilai juri berbeda untuk SD, SMP, dan SMA.
-- **Peserta Lomba**: pendaftaran peserta ke lomba tanpa harus tahu identitas sekolah di awal — admin bisa membuat slot massal per jenjang (NPP & nama sementara dibuat otomatis), lalu menyinkronkan identitas sekolah asli kapan saja. Tersedia juga jalur pendaftaran langsung dari direktori Peserta yang identitasnya sudah diketahui.
+<p align="center"><em>Dibangun untuk <strong>Kwarcab Kota Padangsidimpuan</strong></em></p>
 
-### Peserta (Admin)
-Direktori sekolah peserta (nama sekolah + jenjang), lengkap dengan riwayat keikutsertaan di tiap lomba beserta peringkat yang pernah diraih.
+---
 
-### Juri (Admin)
-Manajemen akun juri beserta riwayat penugasan kriteria dan progres penilaian yang sudah dimasukkan.
+## ✨ Fitur Utama
 
-### Penilaian (Juri)
-Alur kerja juri di lapangan: cari peserta berdasarkan NPP + jenjang pada lomba yang sedang berlangsung, isi nilai (0–31) per kriteria yang menjadi tanggung jawabnya, dengan:
-- Input nilai bertombol +/- (mudah disentuh di HP) selain diketik langsung.
-- **Catatan bersuara (speech-to-text)** realtime per kriteria, dengan tombol untuk mengosongkan catatan.
-- Modal konfirmasi ringkasan nilai sebelum benar-benar tersimpan.
-- Form otomatis kembali ke mode pencarian setelah tersimpan, siap untuk peserta berikutnya.
+Ringkasan modul yang tersedia di aplikasi ini beserta fungsinya masing-masing.
 
-### Live Rank
-Papan peringkat publik (tanpa login) per lomba, diperbarui otomatis (`wire:poll`), dengan filter jenjang dan opsi identitas disamarkan. Skor yang belum dinilai lengkap oleh seluruh juri ditandai badge **"Sementara"**.
+| Modul | Deskripsi |
+|---|---|
+| 📊 **Dashboard** | Ringkasan aktivitas: jumlah peserta per jenjang, tren penilaian, progres tiap lomba & juri |
+| 🏆 **Lomba & Kriteria** | CRUD lomba, kriteria per jenjang (SD/SMP/SMA), penugasan juri per kriteria per jenjang |
+| 👥 **Peserta Lomba** | Slot pendaftaran massal tanpa perlu identitas sekolah di awal — disinkronkan belakangan |
+| 🧑‍⚖️ **Juri** | Manajemen akun juri, riwayat penugasan & progres penilaian |
+| ✍️ **Penilaian** | Alur kerja juri di lapangan: cari peserta, isi nilai dengan stepper +/-, catatan bersuara (speech-to-text realtime), konfirmasi sebelum simpan |
+| 📡 **Live Rank** | Papan peringkat publik, live update tanpa reload, badge nilai sementara jika penilaian belum lengkap |
+| 📄 **Rekap** | Tabel rekap nilai lengkap dengan catatan juri, cetak & unduh PDF |
 
-### Rekap
-Tabel rekap nilai per lomba (skor per kriteria + total, status kelengkapan penilaian, catatan juri) dengan filter jenjang, cetak langsung dari browser, dan unduh PDF.
+## 🧰 Tech Stack
 
-## Tech Stack
+Kumpulan teknologi yang dipakai untuk membangun aplikasi ini.
 
-- **Laravel 13** + **Livewire 4** (komponen class-based, modular per modul)
-- **Tailwind CSS** — desain mobile-first, mendukung mode gelap
-- **MySQL/MariaDB**
-- **barryvdh/laravel-dompdf** — ekspor PDF Rekap
-- **Web Speech API** — catatan penilaian via suara (Alpine.js)
-- `wire:poll` — pembaruan Live Rank tanpa websocket
+- **[Laravel 13](https://laravel.com)** — framework backend
+- **[Livewire 4](https://livewire.laravel.com)** — komponen full-stack reaktif, class-based & modular per modul
+- **[Tailwind CSS](https://tailwindcss.com)** — desain mobile-first dengan mode gelap
+- **MySQL / MariaDB** — database
+- **[barryvdh/laravel-dompdf](https://github.com/barryvdh/laravel-dompdf)** — ekspor Rekap ke PDF
+- **Web Speech API** (via Alpine.js) — catatan penilaian dengan suara, realtime
+- **`wire:poll`** — pembaruan Live Rank tanpa websocket
 
-## Instalasi
+## 🚀 Memulai
+
+Langkah-langkah menyiapkan aplikasi ini di lingkungan lokal, dari instalasi sampai menjalankan test.
+
+### Instalasi
+
+Memasang dependency PHP & JavaScript, lalu menyiapkan file environment.
 
 ```bash
 composer install
@@ -48,26 +61,56 @@ npm install
 
 cp .env.example .env
 php artisan key:generate
+```
 
-# sesuaikan koneksi database di .env, lalu:
+Sesuaikan koneksi database pada `.env`, lalu jalankan migrasi & seeder:
+
+```bash
 php artisan migrate --seed
 ```
 
-## Menjalankan Aplikasi
+### Menjalankan Aplikasi
+
+Menyalakan server Laravel dan proses build asset (Vite) secara bersamaan untuk pengembangan.
 
 ```bash
 php artisan serve
 npm run dev
 ```
 
-## Menjalankan Test
+### Menjalankan Test
+
+Menjalankan seluruh test suite untuk memastikan aplikasi berjalan sesuai harapan.
 
 ```bash
 php artisan test
 ```
 
-## Developer
+## 🗂️ Struktur Peran
 
-**Yoviansyah Rizki Pratama**
-WA: 081222778197
-Email: yoviansyahrizkypratama@gmail.com
+Hak akses tiap peran pengguna terhadap modul-modul di atas.
+
+| Peran | Akses |
+|---|---|
+| **Admin** | Dashboard, Lomba & Kriteria, Peserta, Juri, Rekap |
+| **Juri** | Dashboard, Penilaian |
+| **Publik** | Live Rank (tanpa login) |
+
+---
+
+## 👤 Developer
+
+Aplikasi ini dikembangkan dan dirawat oleh:
+
+<p align="center">
+  <strong>Yoviansyah Rizki Pratama</strong><br>
+  📱 WA: 081222778197 &nbsp;·&nbsp; ✉️ yoviansyahrizkypratama@gmail.com
+</p>
+
+### ☕ Dukungan
+
+Jika aplikasi ini bermanfaat dan ingin mendukung pengembangannya lebih lanjut, silakan hubungi developer melalui kontak di atas untuk informasi donasi.
+
+---
+
+<p align="center"><sub>Built with 🤖 Claude.ai</sub></p>
