@@ -30,7 +30,14 @@
         @else
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ $competition->name }}</h3>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ $competition->name }}</h3>
+                        @if ($maskIdentity)
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-xs font-medium">
+                                {{ __('Identitas Disamarkan') }}
+                            </span>
+                        @endif
+                    </div>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                         {{ $competition->start_time->translatedFormat('d M Y H:i') }} &ndash;
                         {{ $competition->end_time->translatedFormat('d M Y H:i') }}
@@ -83,7 +90,7 @@
                                     <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
                                         {{ $row->registration->npp }}</td>
                                     <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                                        {{ $row->registration->displayName() }}</td>
+                                        {{ $maskIdentity ? __('Peserta :npp', ['npp' => $row->registration->npp]) : $row->registration->displayName() }}</td>
                                     <td class="px-4 py-3">
                                         <span
                                             class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium {{ $typeColors[$row->registration->school_type] }}">

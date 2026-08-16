@@ -103,6 +103,7 @@ class Recap extends Component
             'criteria' => $criteria,
             'availableSchoolTypes' => $availableSchoolTypes,
             'rows' => $rows,
+            'maskIdentity' => $competition && $competition->hide_identity,
         ]);
     }
 }
