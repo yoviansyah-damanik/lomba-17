@@ -62,11 +62,18 @@ class JudgeProgress extends Component
         $totalAssigned = $criteria->sum('registrations_count');
         $totalCompleted = $criteria->sum('evaluations_count');
 
+        $recentEvaluations = Evaluation::where('user_id', $judge->id)
+            ->with(['registration', 'criterion.competition'])
+            ->latest('updated_at')
+            ->limit(6)
+            ->get();
+
         return view('livewire.dashboard.judge-progress', [
             'criteria' => $criteria,
             'totalAssigned' => $totalAssigned,
             'totalCompleted' => $totalCompleted,
             'trend' => $this->evaluationTrend($judge->id),
+            'recentEvaluations' => $recentEvaluations,
         ]);
     }
 }

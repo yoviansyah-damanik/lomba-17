@@ -16,6 +16,38 @@
         <x-charts.trend-bar :data="$trend" />
     </div>
 
+    <!-- Riwayat -->
+    <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-100 dark:ring-gray-700 rounded-2xl p-4 sm:p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('Riwayat Penilaian Terbaru') }}</h3>
+            <a href="{{ route('evaluation.recap') }}"
+                class="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
+                {{ __('Lihat Rekap Lengkap') }} &rarr;
+            </a>
+        </div>
+        @if ($recentEvaluations->isEmpty())
+            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Anda belum memiliki riwayat penilaian.') }}</p>
+        @else
+            <div class="space-y-2">
+                @foreach ($recentEvaluations as $evaluation)
+                    <div class="flex items-center justify-between gap-3 py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                {{ $evaluation->registration?->displayName() }}
+                                <span class="text-xs font-normal text-gray-400">({{ $evaluation->registration?->npp }})</span>
+                            </p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 truncate">
+                                {{ $evaluation->criterion?->name }} &middot; {{ $evaluation->criterion?->competition?->name }}
+                                &middot; {{ $evaluation->updated_at->diffForHumans() }}
+                            </p>
+                        </div>
+                        <span class="shrink-0 text-lg font-bold text-red-600 dark:text-red-400">{{ $evaluation->score }}</span>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+
     <!-- Progress per kriteria -->
     @php
         $typeColors = [

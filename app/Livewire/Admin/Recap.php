@@ -3,7 +3,9 @@
 namespace App\Livewire\Admin;
 
 use App\Models\Competition;
+use App\Models\Criterion;
 use App\Models\Registration;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -26,6 +28,8 @@ class Recap extends Component
 
     /** @var array<string, int> */
     public array $tiePositions = [];
+
+    public ?string $detailRegistrationId = null;
 
     public function mount(string $competitionId): void
     {
@@ -174,6 +178,68 @@ class Recap extends Component
         $this->reset(['tieClusterKey', 'tiePositions']);
     }
 
+    public function viewJudgeDetail(string $registrationId): void
+    {
+        $this->detailRegistrationId = $registrationId;
+    }
+
+    public function closeJudgeDetail(): void
+    {
+        $this->detailRegistrationId = null;
+    }
+
+    /**
+     * Rincian juri per kriteria untuk satu peserta: siapa saja juri yang
+     * ditugaskan, nilai yang sudah diberikan, dan catatannya (jika ada).
+     */
+    private function judgeDetail(Competition $competition): ?object
+    {
+        if (! $this->detailRegistrationId) {
+            return null;
+        }
+
+        $registration = $competition->registrations()
+            ->with(['participant', 'evaluations'])
+            ->find($this->detailRegistrationId);
+
+        if (! $registration) {
+            return null;
+        }
+
+        $evaluationsByCriterionJudge = $registration->evaluations
+            ->keyBy(fn ($evaluation) => $evaluation->criterion_id.'|'.$evaluation->user_id);
+
+        $criteria = $competition->criteria
+            ->filter(fn (Criterion $criterion) => in_array($registration->school_type, $criterion->school_types, true))
+            ->sortBy('name')
+            ->map(function (Criterion $criterion) use ($registration, $evaluationsByCriterionJudge) {
+                $judges = $criterion->judgesFor($registration->school_type)
+                    ->orderBy('name')
+                    ->get()
+                    ->map(function (User $judge) use ($criterion, $evaluationsByCriterionJudge) {
+                        $evaluation = $evaluationsByCriterionJudge->get($criterion->id.'|'.$judge->id);
+
+                        return (object) [
+                            'judge' => $judge,
+                            'score' => $evaluation->score ?? null,
+                            'notes' => $evaluation->notes ?? null,
+                            'submitted' => (bool) $evaluation,
+                        ];
+                    });
+
+                return (object) [
+                    'criterion' => $criterion,
+                    'judges' => $judges,
+                ];
+            })
+            ->values();
+
+        return (object) [
+            'registration' => $registration,
+            'criteria' => $criteria,
+        ];
+    }
+
     /** @return array{0: string, 1: int} */
     private function parseClusterKey(): array
     {
@@ -206,6 +272,7 @@ class Recap extends Component
             'competition' => $competition,
             'rows' => $competition ? $this->rows($competition) : collect(),
             'tieCluster' => $tieCluster,
+            'judgeDetail' => $competition ? $this->judgeDetail($competition) : null,
             'maskIdentity' => $competition && $competition->hide_identity,
         ]);
     }

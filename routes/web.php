@@ -32,4 +32,8 @@ Route::view('evaluation', 'evaluation')
     ->middleware(['auth', 'role:judge'])
     ->name('evaluation');
 
+Route::view('evaluation/recap', 'evaluation.recap')
+    ->middleware(['auth', 'role:judge'])
+    ->name('evaluation.recap');
+
 require __DIR__.'/auth.php';

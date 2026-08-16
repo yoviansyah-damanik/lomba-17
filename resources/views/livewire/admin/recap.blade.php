@@ -135,8 +135,23 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-3">
-                                    <p class="font-medium text-gray-900 dark:text-gray-100">
-                                        {{ $maskIdentity ? __('Peserta :rank', ['rank' => $loop->iteration]) : $row->registration->displayName() }}</p>
+                                    <div class="flex items-center gap-1.5">
+                                        <p class="font-medium text-gray-900 dark:text-gray-100">
+                                            {{ $maskIdentity ? __('Peserta :rank', ['rank' => $loop->iteration]) : $row->registration->displayName() }}
+                                        </p>
+                                        <button type="button"
+                                            wire:click="viewJudgeDetail('{{ $row->registration->id }}')"
+                                            class="shrink-0 text-gray-400 hover:text-red-600 dark:hover:text-red-400 print:hidden"
+                                            title="{{ __('Lihat detail penilaian juri') }}">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                     @if (! $maskIdentity)
                                         <p class="text-xs text-gray-400 dark:text-gray-500">{{ $row->npp }}</p>
                                     @endif
@@ -270,6 +285,80 @@
                         </div>
                     </div>
                 </form>
+            @endif
+        </x-simple-modal>
+
+        <x-simple-modal :show="(bool) $detailRegistrationId" show-property="detailRegistrationId" max-width="max-w-2xl">
+            @if ($judgeDetail)
+                <div class="space-y-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">
+                                {{ $maskIdentity ? __('Peserta') : $judgeDetail->registration->displayName() }}
+                            </h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                {{ $judgeDetail->registration->npp }} &middot;
+                                {{ $judgeDetail->registration->school_type }}
+                            </p>
+                        </div>
+                        <span
+                            class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium {{ $typeColors[$judgeDetail->registration->school_type] }}">
+                            {{ $judgeDetail->registration->school_type }}
+                        </span>
+                    </div>
+
+                    <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                        @forelse ($judgeDetail->criteria as $item)
+                            <div class="ring-1 ring-gray-200 dark:ring-gray-700 rounded-xl p-3">
+                                <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                    {{ $item->criterion->name }}
+                                </p>
+
+                                <div class="mt-2 divide-y divide-gray-100 dark:divide-gray-700">
+                                    @forelse ($item->judges as $entry)
+                                        <div class="py-2 flex items-start justify-between gap-3">
+                                            <div class="min-w-0">
+                                                <p class="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                                    {{ $entry->judge->name }}
+                                                </p>
+                                                @if ($entry->submitted && filled($entry->notes))
+                                                    <p class="text-xs italic text-gray-400 dark:text-gray-500 mt-0.5">
+                                                        {{ $entry->notes }}
+                                                    </p>
+                                                @endif
+                                            </div>
+                                            <div class="shrink-0 text-right">
+                                                @if ($entry->submitted)
+                                                    <span class="text-base font-bold text-red-600 dark:text-red-400">
+                                                        {{ $entry->score }}
+                                                    </span>
+                                                @else
+                                                    <span
+                                                        class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                                        {{ __('Belum menilai') }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <p class="py-2 text-xs text-gray-400 dark:text-gray-500">
+                                            {{ __('Belum ada juri yang ditugaskan pada kriteria ini.') }}
+                                        </p>
+                                    @endforelse
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ __('Tidak ada kriteria yang berlaku untuk jenjang peserta ini.') }}
+                            </p>
+                        @endforelse
+                    </div>
+
+                    <div class="flex justify-end pt-2">
+                        <x-secondary-button type="button"
+                            wire:click="closeJudgeDetail">{{ __('Tutup') }}</x-secondary-button>
+                    </div>
+                </div>
             @endif
         </x-simple-modal>
     @endif
