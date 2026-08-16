@@ -24,10 +24,10 @@ class DatabaseSeeder extends Seeder
             'username' => 'admin',
         ]);
 
-        $judges = collect(['Juri Satu', 'Juri Dua', 'Juri Tiga'])->map(
-            fn (string $name, int $i) => User::factory()->create([
-                'name' => $name,
-                'username' => 'juri'.($i + 1),
+        $judges = collect(range(1, 20))->map(
+            fn (int $i) => User::factory()->create([
+                'name' => "Juri {$i}",
+                'username' => "juri{$i}",
             ])
         );
 
