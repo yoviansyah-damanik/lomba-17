@@ -95,9 +95,22 @@
                 @endforeach
             </div>
 
+            <div class="flex flex-wrap gap-2 mb-2">
+                <button type="button" wire:click="$set('registeredFilter', '')"
+                    class="px-3 py-1.5 rounded-full text-sm font-medium {{ $registeredFilter === '' ? 'bg-red-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700' }}">
+                    {{ __('Semua') }}
+                </button>
+                @foreach (\App\Livewire\Admin\CompetitionParticipants::SCHOOL_TYPES as $type)
+                    <button type="button" wire:click="$set('registeredFilter', '{{ $type }}')"
+                        class="px-3 py-1.5 rounded-full text-sm font-medium {{ $registeredFilter === $type ? 'bg-red-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700' }}">
+                        {{ $type }}
+                    </button>
+                @endforeach
+            </div>
+
             <div
                 class="max-h-[55vh] overflow-y-auto space-y-2 border border-gray-200 dark:border-gray-700 rounded-lg p-2">
-                @forelse ($registrations as $registration)
+                @forelse ($filteredRegistrations as $registration)
                     <div wire:key="reg-{{ $registration->id }}" class="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-2.5">
                         <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0 flex-1">
@@ -192,7 +205,7 @@
                     </div>
                 @empty
                     <p class="text-sm text-gray-500 dark:text-gray-400 p-2">
-                        {{ __('Belum ada peserta terdaftar di lomba ini.') }}</p>
+                        {{ $registeredFilter ? __('Belum ada peserta :type terdaftar.', ['type' => $registeredFilter]) : __('Belum ada peserta terdaftar di lomba ini.') }}</p>
                 @endforelse
             </div>
         </div>

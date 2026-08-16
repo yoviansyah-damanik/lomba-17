@@ -21,6 +21,8 @@ class CompetitionParticipants extends Component
 
     public int $nppDigits = 3;
 
+    public string $registeredFilter = '';
+
     // Tambah dari direktori Peserta
     public string $search = '';
 
@@ -271,9 +273,14 @@ class CompetitionParticipants extends Component
             ? $registrations->firstWhere('id', $this->syncingRegistrationId)
             : null;
 
+        $filteredRegistrations = $this->registeredFilter
+            ? $registrations->where('school_type', $this->registeredFilter)->values()
+            : $registrations;
+
         return view('livewire.admin.competition-participants', [
             'competition' => $competition,
             'registrations' => $registrations,
+            'filteredRegistrations' => $filteredRegistrations,
             'availableParticipants' => $this->availableParticipantsQuery()->limit(50)->get(),
             'syncingRegistration' => $syncingRegistration,
             'syncCandidates' => $syncingRegistration ? $this->syncCandidatesQuery($syncingRegistration)->get() : collect(),
