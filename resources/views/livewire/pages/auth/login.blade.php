@@ -46,17 +46,31 @@ new #[Layout('layouts.guest')] class extends Component
         <!-- Password -->
         <div>
             <x-input-label for="password" :value="__('Password')" />
-            <div class="relative mt-1">
+            <div class="relative mt-1" x-data="{ show: false }">
                 <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                 </span>
-                <x-text-input wire:model="form.password" id="password" class="block w-full pl-10"
+                <x-text-input wire:model="form.password" id="password" class="block w-full pl-10 pr-10"
                                 type="password"
+                                x-bind:type="show ? 'text' : 'password'"
                                 name="password"
                                 placeholder="{{ __('Masukkan password') }}"
                                 required autocomplete="current-password" />
+                <button type="button" @click="show = !show"
+                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    :aria-label="show ? '{{ __('Sembunyikan password') }}' : '{{ __('Tampilkan password') }}'"
+                    tabindex="-1">
+                    <svg x-show="!show" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <svg x-show="show" x-cloak class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.025 10.025 0 012.132-3.592m3.11-2.457A9.958 9.958 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.965 9.965 0 01-4.132 5.411M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18" />
+                    </svg>
+                </button>
             </div>
             <x-input-error :messages="$errors->get('form.password')" class="mt-2" />
         </div>
