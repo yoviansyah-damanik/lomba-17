@@ -88,15 +88,21 @@
                                 this.baseText = this.$refs.notesInput.value.trim();
                                 this.finalText = '';
                                 this.rec.onresult = (e) => {
+                                    // Dibangun ulang dari index 0 tiap event (bukan diakumulasi dari
+                                    // e.resultIndex) karena Chrome kadang mengulang hasil yang sudah
+                                    // final di event berikutnya — kalau diakumulasi, kata yang sama
+                                    // akan tertulis dobel.
+                                    let final = '';
                                     let interim = '';
-                                    for (let i = e.resultIndex; i < e.results.length; i++) {
+                                    for (let i = 0; i < e.results.length; i++) {
                                         const transcript = e.results[i][0].transcript;
                                         if (e.results[i].isFinal) {
-                                            this.finalText += transcript + ' ';
+                                            final += transcript + ' ';
                                         } else {
                                             interim += transcript;
                                         }
                                     }
+                                    this.finalText = final;
                                     this.applyText([this.baseText, (this.finalText + interim).trim()].filter(Boolean).join(' '));
                                 };
                                 this.rec.onend = () => this.stopListening();
@@ -126,8 +132,13 @@
                 </div>
             @endforeach
 
-            <div class="flex justify-end">
-                <x-primary-button type="submit">{{ __('Simpan') }}</x-primary-button>
+            <div class="h-20 sm:h-16" aria-hidden="true"></div>
+
+            <div
+                class="fixed inset-x-0 bottom-16 sm:bottom-0 z-40 bg-white/95 dark:bg-gray-800/95 backdrop-blur border-t border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 lg:px-8">
+                <div class="max-w-7xl mx-auto flex justify-end">
+                    <x-primary-button type="submit" class="w-full sm:w-auto">{{ __('Simpan') }}</x-primary-button>
+                </div>
             </div>
         </form>
 

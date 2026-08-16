@@ -75,6 +75,19 @@ class CriterionForm extends Component
         return $rules;
     }
 
+    /** @return array<string, string> */
+    protected function validationAttributes(): array
+    {
+        $attributes = [];
+
+        foreach ($this->activeCriteria() as $criterion) {
+            $attributes["scores.{$criterion->id}"] = __('nilai ":name"', ['name' => $criterion->name]);
+            $attributes["notes.{$criterion->id}"] = __('catatan ":name"', ['name' => $criterion->name]);
+        }
+
+        return $attributes;
+    }
+
     public function incrementScore(string $criterionId): void
     {
         $current = $this->scores[$criterionId] ?? (Criterion::MIN_SCORE - 1);
