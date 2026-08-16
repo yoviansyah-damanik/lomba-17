@@ -29,6 +29,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Description
+    |--------------------------------------------------------------------------
+    |
+    | A short description of the application, used for the meta description
+    | and Open Graph tags rendered in the page <head>.
+    |
+    */
+
+    'description' => env('APP_DESCRIPTION', 'Aplikasi penilaian lomba antar sekolah — pendaftaran peserta, penugasan juri, penilaian, dan papan peringkat secara real-time.'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |
