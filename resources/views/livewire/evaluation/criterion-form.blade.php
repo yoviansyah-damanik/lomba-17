@@ -7,9 +7,16 @@
     </div> --}}
 
     @if ($criteria->isEmpty())
-        <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ __('Tidak ada kriteria yang dapat dinilai saat ini. Pastikan Anda memiliki kriteria yang ditugaskan dan jadwal lombanya sedang berlangsung.') }}
-        </p>
+        <div class="flex items-start gap-3 rounded-xl bg-amber-50 dark:bg-amber-900/30 p-4">
+            <svg class="h-5 w-5 shrink-0 text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            <p class="text-sm text-amber-800 dark:text-amber-300">
+                {{ __('Anda tidak dapat menilai peserta ini karena belum ada kriteria yang ditugaskan untuk jenjang :type pada lomba ini. Hubungi admin untuk menugaskan kriteria.', ['type' => $registration->school_type]) }}
+            </p>
+        </div>
     @else
         <form wire:submit="review" class="space-y-4" autocomplete="off">
             @foreach ($criteria as $criterion)
