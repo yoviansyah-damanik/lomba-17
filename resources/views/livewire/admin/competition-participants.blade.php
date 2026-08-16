@@ -68,14 +68,18 @@
             </div>
 
             <div
-                class="max-h-[55vh] overflow-y-auto space-y-1.5 border border-gray-200 dark:border-gray-700 rounded-lg p-2">
+                class="max-h-[55vh] overflow-y-auto space-y-2 border border-gray-200 dark:border-gray-700 rounded-lg p-2">
                 @forelse ($registrations as $registration)
-                    <div wire:key="reg-{{ $registration->id }}" class="bg-gray-50 dark:bg-gray-900/40 rounded-lg">
-                        <div class="flex items-center gap-3 px-2.5 py-1.5">
+                    <div wire:key="reg-{{ $registration->id }}" class="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-2.5">
+                        <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-1.5">
+                                <div class="flex flex-wrap items-center gap-1.5">
                                     <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                                         {{ $registration->displayName() }}</p>
+                                    <span
+                                        class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                        {{ $registration->school_type }}
+                                    </span>
                                     @if (!$registration->participant_id)
                                         <span
                                             class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
@@ -83,31 +87,10 @@
                                         </span>
                                     @endif
                                 </div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $registration->school_type }}
-                                </p>
                             </div>
-                            <div class="w-28 shrink-0">
-                                <input type="text" value="{{ $registration->npp }}"
-                                    wire:change="updateNpp('{{ $registration->id }}', $event.target.value)"
-                                    aria-label="{{ __('NPP') }}"
-                                    class="w-full text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-red-500 focus:ring-red-500 rounded-lg shadow-sm">
-                                @error("assignedNpp.{$registration->id}")
-                                    <p class="text-xs text-red-600 dark:text-red-400 mt-0.5">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            @if ($registration->participant_id)
-                                <button type="button" wire:click="unsync('{{ $registration->id }}')"
-                                    class="shrink-0 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300">
-                                    {{ __('Batalkan Sinkronisasi') }}
-                                </button>
-                            @else
-                                <button type="button" wire:click="openSync('{{ $registration->id }}')"
-                                    class="shrink-0 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
-                                    {{ __('Sinkronkan') }}
-                                </button>
-                            @endif
                             <button type="button" wire:click="remove('{{ $registration->id }}')"
-                                class="shrink-0 text-gray-400 hover:text-red-600 dark:hover:text-red-400">
+                                class="shrink-0 h-7 w-7 flex items-center justify-center rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                                aria-label="{{ __('Hapus') }}">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                     stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -115,8 +98,33 @@
                             </button>
                         </div>
 
+                        <div class="mt-2 flex items-center gap-2">
+                            <label class="text-xs text-gray-400 dark:text-gray-500 shrink-0">{{ __('NPP') }}</label>
+                            <input type="text" value="{{ $registration->npp }}"
+                                wire:change="updateNpp('{{ $registration->id }}', $event.target.value)"
+                                aria-label="{{ __('NPP') }}"
+                                class="w-full text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-red-500 focus:ring-red-500 rounded-lg shadow-sm">
+                        </div>
+                        @error("assignedNpp.{$registration->id}")
+                            <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>
+                        @enderror
+
+                        <div class="mt-2 flex justify-end">
+                            @if ($registration->participant_id)
+                                <button type="button" wire:click="unsync('{{ $registration->id }}')"
+                                    class="text-xs font-medium px-2.5 py-1 rounded-lg text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40">
+                                    {{ __('Batalkan Sinkronisasi') }}
+                                </button>
+                            @else
+                                <button type="button" wire:click="openSync('{{ $registration->id }}')"
+                                    class="text-xs font-medium px-2.5 py-1 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40">
+                                    {{ __('Sinkronkan') }}
+                                </button>
+                            @endif
+                        </div>
+
                         @if ($syncingRegistration && $syncingRegistration->id === $registration->id)
-                            <div class="px-2.5 pb-2.5 pt-1 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                            <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 space-y-2">
                                 <x-text-input wire:model.live.debounce.300ms="syncSearch" type="text"
                                     class="block w-full text-sm" :placeholder="__('Cari peserta :type existing...', [
                                         'type' => $registration->school_type,
@@ -126,7 +134,7 @@
                                     @forelse ($syncCandidates as $candidate)
                                         <button type="button" wire:key="cand-{{ $candidate->id }}"
                                             wire:click="syncExisting('{{ $registration->id }}', '{{ $candidate->id }}')"
-                                            class="w-full text-left px-2 py-1 text-sm rounded-lg hover:bg-white dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                            class="w-full text-left px-2 py-1.5 text-sm rounded-lg hover:bg-white dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">
                                             {{ $candidate->school_name }}
                                         </button>
                                     @empty
@@ -135,10 +143,11 @@
                                     @endforelse
                                 </div>
 
-                                <div class="flex gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">
+                                <div class="flex flex-col sm:flex-row gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">
                                     <x-text-input wire:model="newSchoolName" type="text" class="block w-full text-sm"
                                         :placeholder="__('Atau ketik nama sekolah baru...')" />
-                                    <x-secondary-button type="button" wire:click="syncNew('{{ $registration->id }}')">
+                                    <x-secondary-button type="button" wire:click="syncNew('{{ $registration->id }}')"
+                                        class="w-full sm:w-auto justify-center">
                                         {{ __('Buat & Kaitkan') }}
                                     </x-secondary-button>
                                 </div>
