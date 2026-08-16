@@ -84,6 +84,17 @@
                 @endif
             </div>
 
+            @php $countsByType = $registrations->countBy('school_type'); @endphp
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                @foreach (\App\Livewire\Admin\CompetitionParticipants::SCHOOL_TYPES as $type)
+                    <div class="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-2 text-center">
+                        <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            {{ $countsByType->get($type, 0) }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $type }}</p>
+                    </div>
+                @endforeach
+            </div>
+
             <div
                 class="max-h-[55vh] overflow-y-auto space-y-2 border border-gray-200 dark:border-gray-700 rounded-lg p-2">
                 @forelse ($registrations as $registration)
