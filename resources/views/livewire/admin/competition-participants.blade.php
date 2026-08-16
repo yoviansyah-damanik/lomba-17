@@ -48,6 +48,23 @@
                     </div>
                 @endforeach
             </div>
+
+            <div class="mt-3">
+                <x-input-label :value="__('Format NPP')" />
+                <div class="mt-1 flex gap-4">
+                    <label class="flex items-center gap-2">
+                        <input type="radio" wire:model="nppDigits" value="2"
+                            class="dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-red-600 shadow-sm focus:ring-red-500">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">{{ __('2 digit (01, 02, ...)') }}</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="radio" wire:model="nppDigits" value="3"
+                            class="dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-red-600 shadow-sm focus:ring-red-500">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">{{ __('3 digit (001, 002, ...)') }}</span>
+                    </label>
+                </div>
+            </div>
+
             <div class="flex justify-end mt-2">
                 <x-primary-button type="button" wire:click="generateSlots">{{ __('Buat Slot') }}</x-primary-button>
             </div>

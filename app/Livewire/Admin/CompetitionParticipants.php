@@ -19,6 +19,8 @@ class CompetitionParticipants extends Component
     /** @var array<string, int> */
     public array $slotCounts = ['SD' => 0, 'SMP' => 0, 'SMA' => 0];
 
+    public int $nppDigits = 3;
+
     // Tambah dari direktori Peserta
     public string $search = '';
 
@@ -61,6 +63,7 @@ class CompetitionParticipants extends Component
     {
         $competition = $this->competition();
         $generated = false;
+        $digits = in_array($this->nppDigits, [2, 3], true) ? $this->nppDigits : 3;
 
         foreach (self::SCHOOL_TYPES as $type) {
             $count = (int) ($this->slotCounts[$type] ?? 0);
@@ -78,7 +81,7 @@ class CompetitionParticipants extends Component
                 Registration::create([
                     'competition_id' => $competition->id,
                     'school_type' => $type,
-                    'npp' => sprintf('%03d', $seq),
+                    'npp' => sprintf('%0'.$digits.'d', $seq),
                     'label' => __(':type Peserta :seq', ['type' => $type, 'seq' => $seq]),
                 ]);
             }
