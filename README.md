@@ -1,58 +1,73 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Penilaian Lomba
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi web mobile-friendly untuk mengelola penilaian lomba antar sekolah (SD/SMP/SMA) — mulai dari pendaftaran peserta, penugasan juri per kriteria, proses penilaian oleh juri, hingga papan peringkat live dan rekap nilai. Dibangun untuk **Kwarcab Kota Padangsidimpuan**.
 
-## About Laravel
+## Modul Aplikasi
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Dashboard
+Ringkasan aktivitas untuk admin (jumlah peserta per jenjang, tren penilaian masuk 7 hari terakhir, progres tiap lomba dan tiap juri) dan untuk juri (daftar kriteria miliknya beserta progres penilaian).
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Lomba & Kriteria (Admin)
+- CRUD lomba: nama, jadwal mulai/selesai (format 24 jam), status Live Rank (buka/tutup) dan opsi sembunyikan identitas peserta di papan peringkat.
+- CRUD kriteria per lomba, dengan **jenjang sekolah** yang bisa dipilih per kriteria (SD/SMP/SMA) dan **penugasan juri khusus per jenjang** — satu kriteria bisa dinilai juri berbeda untuk SD, SMP, dan SMA.
+- **Peserta Lomba**: pendaftaran peserta ke lomba tanpa harus tahu identitas sekolah di awal — admin bisa membuat slot massal per jenjang (NPP & nama sementara dibuat otomatis), lalu menyinkronkan identitas sekolah asli kapan saja. Tersedia juga jalur pendaftaran langsung dari direktori Peserta yang identitasnya sudah diketahui.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Peserta (Admin)
+Direktori sekolah peserta (nama sekolah + jenjang), lengkap dengan riwayat keikutsertaan di tiap lomba beserta peringkat yang pernah diraih.
 
-## Learning Laravel
+### Juri (Admin)
+Manajemen akun juri beserta riwayat penugasan kriteria dan progres penilaian yang sudah dimasukkan.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Penilaian (Juri)
+Alur kerja juri di lapangan: cari peserta berdasarkan NPP + jenjang pada lomba yang sedang berlangsung, isi nilai (0–31) per kriteria yang menjadi tanggung jawabnya, dengan:
+- Input nilai bertombol +/- (mudah disentuh di HP) selain diketik langsung.
+- **Catatan bersuara (speech-to-text)** realtime per kriteria, dengan tombol untuk mengosongkan catatan.
+- Modal konfirmasi ringkasan nilai sebelum benar-benar tersimpan.
+- Form otomatis kembali ke mode pencarian setelah tersimpan, siap untuk peserta berikutnya.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Live Rank
+Papan peringkat publik (tanpa login) per lomba, diperbarui otomatis (`wire:poll`), dengan filter jenjang dan opsi identitas disamarkan. Skor yang belum dinilai lengkap oleh seluruh juri ditandai badge **"Sementara"**.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### Rekap
+Tabel rekap nilai per lomba (skor per kriteria + total, status kelengkapan penilaian, catatan juri) dengan filter jenjang, cetak langsung dari browser, dan unduh PDF.
 
-## Agentic Development
+## Tech Stack
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+- **Laravel 13** + **Livewire 4** (komponen class-based, modular per modul)
+- **Tailwind CSS** — desain mobile-first, mendukung mode gelap
+- **MySQL/MariaDB**
+- **barryvdh/laravel-dompdf** — ekspor PDF Rekap
+- **Web Speech API** — catatan penilaian via suara (Alpine.js)
+- `wire:poll` — pembaruan Live Rank tanpa websocket
+
+## Instalasi
 
 ```bash
-composer require laravel/boost --dev
+composer install
+npm install
 
-php artisan boost:install
+cp .env.example .env
+php artisan key:generate
+
+# sesuaikan koneksi database di .env, lalu:
+php artisan migrate --seed
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Menjalankan Aplikasi
 
-## Contributing
+```bash
+php artisan serve
+npm run dev
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Menjalankan Test
 
-## Code of Conduct
+```bash
+php artisan test
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Developer
 
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Yoviansyah Rizki Pratama**
+WA: 081222778197
+Email: yoviansyahrizkypratama@gmail.com
