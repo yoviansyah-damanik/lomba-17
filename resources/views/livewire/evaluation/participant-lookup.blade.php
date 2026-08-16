@@ -26,8 +26,9 @@
                     <div class="min-w-0 flex-1">
                         <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">
                             {{ $registration->displayName() }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $registration->npp }} &middot;
+                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $registration->npp }} &middot;
                             {{ $registration->school_type }}</p>
+                        <p class="text-xs text-red-600 dark:text-red-400 font-medium truncate">{{ $registration->competition->name }}</p>
                     </div>
                 </div>
             </div>
@@ -36,14 +37,34 @@
                 class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-100 dark:ring-gray-700 rounded-2xl p-4 sm:p-6">
                 <form wire:submit="search" class="space-y-4" autocomplete="off">
                     <div>
-                        <x-input-label for="competitionId" :value="__('Lomba')" />
-                        <select wire:model="competitionId" id="competitionId" autocomplete="off"
-                            class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-red-500 focus:ring-red-500 rounded-md shadow-sm mt-1 block w-full">
-                            <option value="">{{ __('Pilih lomba') }}</option>
+                        <x-input-label :value="__('Lomba')" />
+                        <div class="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                             @foreach ($competitions as $item)
-                                <option value="{{ $item->id }}">{{ $item->name }}</option>
+                                <label
+                                    class="relative flex items-center gap-3 rounded-xl border-2 border-gray-300 dark:border-gray-700 p-3 cursor-pointer transition
+                                        hover:border-red-300 dark:hover:border-red-700 hover:bg-gray-50 dark:hover:bg-gray-700/40
+                                        has-[:checked]:border-red-600 has-[:checked]:bg-red-50 has-[:checked]:shadow-sm dark:has-[:checked]:bg-red-900/30">
+                                    <input type="radio" wire:model="competitionId" value="{{ $item->id }}"
+                                        class="peer sr-only">
+                                    <span
+                                        class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-gray-300 dark:border-gray-600 transition peer-checked:border-red-600">
+                                        <span
+                                            class="h-2.5 w-2.5 rounded-full bg-red-600 scale-0 peer-checked:scale-100 transition-transform"></span>
+                                    </span>
+                                    <span
+                                        class="text-sm font-medium truncate text-gray-700 dark:text-gray-300 peer-checked:text-red-700 dark:peer-checked:text-red-300">
+                                        {{ $item->name }}
+                                    </span>
+                                    <svg
+                                        class="ml-auto h-4 w-4 shrink-0 text-red-600 opacity-0 peer-checked:opacity-100 transition-opacity"
+                                        fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd"
+                                            d="M16.704 5.29a1 1 0 010 1.415l-7.5 7.5a1 1 0 01-1.415 0l-3.5-3.5a1 1 0 111.415-1.414L8.5 12.086l6.79-6.795a1 1 0 011.414 0z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </label>
                             @endforeach
-                        </select>
+                        </div>
                         <x-input-error :messages="$errors->get('competitionId')" class="mt-2" />
                     </div>
 

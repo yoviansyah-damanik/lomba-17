@@ -1,10 +1,10 @@
-<div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-100 dark:ring-gray-700 rounded-2xl p-4 sm:p-6 space-y-6"
+<div class="p-4 space-y-6 bg-white shadow-sm dark:bg-gray-800 ring-1 ring-gray-100 dark:ring-gray-700 rounded-2xl sm:p-6"
     @if ($criteria->isNotEmpty()) x-data @endif>
-    <div>
+    {{-- <div>
         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ $registration->displayName() }}</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400">{{ $registration->npp }} &middot;
             {{ $registration->school_type }}</p>
-    </div>
+    </div> --}}
 
     @if ($criteria->isEmpty())
         <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -13,7 +13,7 @@
     @else
         <form wire:submit="review" class="space-y-4" autocomplete="off">
             @foreach ($criteria as $criterion)
-                <div class="ring-1 ring-gray-200 dark:ring-gray-700 rounded-xl p-4 space-y-3">
+                <div class="p-4 space-y-3 ring-1 ring-gray-200 dark:ring-gray-700 rounded-xl">
                     <div>
                         <x-input-label :value="$criterion->name" />
                         @if ($criterion->description)
@@ -23,16 +23,16 @@
 
                     <div>
                         <x-input-label :for="'score-' . $criterion->id" :value="__('Nilai (0-31)')" />
-                        <div class="mt-1 flex items-center gap-3">
+                        <div class="flex items-center gap-3 mt-1">
                             <button type="button" wire:click="decrementScore('{{ $criterion->id }}')"
-                                class="shrink-0 h-11 w-11 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600">
+                                class="text-xl font-bold text-gray-600 border border-gray-300 rounded-lg shrink-0 h-11 w-11 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600">
                                 &minus;
                             </button>
                             <input wire:model="scores.{{ $criterion->id }}" id="score-{{ $criterion->id }}"
                                 type="number" min="0" max="31" autocomplete="off"
-                                class="w-full text-center text-xl font-bold border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 focus:border-red-500 focus:ring-red-500 rounded-lg shadow-sm scroll-mt-36">
+                                class="w-full text-xl font-bold text-center border-gray-300 rounded-lg shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 focus:border-red-500 focus:ring-red-500 scroll-mt-36">
                             <button type="button" wire:click="incrementScore('{{ $criterion->id }}')"
-                                class="shrink-0 h-11 w-11 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600">
+                                class="text-xl font-bold text-gray-600 border border-gray-300 rounded-lg shrink-0 h-11 w-11 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600">
                                 +
                             </button>
                         </div>
@@ -53,6 +53,12 @@
                             rec: null,
                             baseText: '',
                             finalText: '',
+                            // Cursor kami sendiri, terpisah dari e.resultIndex — di Android Chrome,
+                            // e.resultIndex/e.results tidak bisa dipercaya (kadang mengirim ulang
+                            // seluruh transkrip dari awal sebagai 'hasil baru'). Dengan menandai
+                            // index yang sudah dikunci di sini, index itu tidak pernah diproses lagi
+                            // walau muncul lagi di event berikutnya.
+                            committedUpTo: 0,
                             applyText(text) {
                                 this.$refs.notesInput.value = text;
                                 // set .value tidak memicu event 'input' bawaan browser,
@@ -87,23 +93,20 @@
                                 this.rec.interimResults = true;
                                 this.baseText = this.$refs.notesInput.value.trim();
                                 this.finalText = '';
+                                this.committedUpTo = 0;
                                 this.rec.onresult = (e) => {
-                                    // Dibangun ulang dari index 0 tiap event (bukan diakumulasi dari
-                                    // e.resultIndex) karena Chrome kadang mengulang hasil yang sudah
-                                    // final di event berikutnya — kalau diakumulasi, kata yang sama
-                                    // akan tertulis dobel.
-                                    let final = '';
                                     let interim = '';
-                                    for (let i = 0; i < e.results.length; i++) {
-                                        const transcript = e.results[i][0].transcript;
+                                    for (let i = this.committedUpTo; i < e.results.length; i++) {
+                                        const transcript = e.results[i][0].transcript.trim();
                                         if (e.results[i].isFinal) {
-                                            final += transcript + ' ';
+                                            this.finalText = (this.finalText && transcript.startsWith(this.finalText)) ?
+                                                transcript : [this.finalText, transcript].filter(Boolean).join(' ');
+                                            this.committedUpTo = i + 1;
                                         } else {
                                             interim += transcript;
                                         }
                                     }
-                                    this.finalText = final;
-                                    this.applyText([this.baseText, (this.finalText + interim).trim()].filter(Boolean).join(' '));
+                                    this.applyText([this.baseText, [this.finalText, interim].filter(Boolean).join(' ')].filter(Boolean).join(' '));
                                 };
                                 this.rec.onend = () => this.stopListening();
                                 this.rec.onerror = () => this.stopListening();
@@ -111,14 +114,15 @@
                                 this.listening = true;
                             },
                         }">
-                            <textarea wire:model="notes.{{ $criterion->id }}" x-ref="notesInput" id="notes-{{ $criterion->id }}" rows="2" autocomplete="off"
-                                class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-red-500 focus:ring-red-500 rounded-lg shadow-sm block w-full pr-10"></textarea>
+                            <textarea wire:model="notes.{{ $criterion->id }}" x-ref="notesInput" id="notes-{{ $criterion->id }}" rows="2"
+                                autocomplete="off"
+                                class="block w-full pr-10 border-gray-300 rounded-lg shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-red-500 focus:ring-red-500"></textarea>
                             <button type="button" x-show="supported" @click="toggle()"
                                 :class="listening ? 'text-red-600 animate-pulse' :
                                     'text-gray-400 hover:text-red-600 dark:hover:text-red-400'"
                                 class="absolute right-2 bottom-2"
                                 :aria-label="listening ? '{{ __('Berhenti merekam') }}' : '{{ __('Isi catatan dengan suara') }}'">
-                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                     stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3z" />
@@ -135,8 +139,8 @@
             <div class="h-20 sm:h-16" aria-hidden="true"></div>
 
             <div
-                class="fixed inset-x-0 bottom-16 sm:bottom-0 z-40 bg-white/95 dark:bg-gray-800/95 backdrop-blur border-t border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 lg:px-8">
-                <div class="max-w-7xl mx-auto flex justify-end">
+                class="fixed inset-x-0 z-40 px-4 py-3 border-t border-gray-200 bottom-16 sm:bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur dark:border-gray-700 sm:px-6 lg:px-8">
+                <div class="flex justify-end mx-auto max-w-7xl">
                     <x-primary-button type="submit" class="w-full sm:w-auto">{{ __('Simpan') }}</x-primary-button>
                 </div>
             </div>
@@ -146,12 +150,12 @@
             <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                 {{ __('Konfirmasi Nilai') }}
             </h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ $registration->displayName() }}</p>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $registration->displayName() }}</p>
 
             <div class="mt-4 space-y-3">
                 @foreach ($criteria as $criterion)
                     <div
-                        class="flex items-start justify-between gap-4 border-t border-gray-100 dark:border-gray-700 pt-3 first:border-t-0 first:pt-0">
+                        class="flex items-start justify-between gap-4 pt-3 border-t border-gray-100 dark:border-gray-700 first:border-t-0 first:pt-0">
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $criterion->name }}</p>
                             @if (filled($notes[$criterion->id] ?? null))
@@ -159,7 +163,7 @@
                                     {{ $notes[$criterion->id] }}</p>
                             @endif
                         </div>
-                        <p class="shrink-0 text-lg font-bold text-red-600 dark:text-red-400">
+                        <p class="text-lg font-bold text-red-600 shrink-0 dark:text-red-400">
                             {{ $scores[$criterion->id] ?? '-' }}</p>
                     </div>
                 @endforeach

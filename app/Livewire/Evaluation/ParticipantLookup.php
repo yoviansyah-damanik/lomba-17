@@ -11,13 +11,13 @@ use Livewire\Component;
 
 class ParticipantLookup extends Component
 {
-    #[Validate('required|exists:competitions,id')]
+    #[Validate('required|exists:competitions,id', as: 'lomba')]
     public string $competitionId = '';
 
-    #[Validate('required|string')]
+    #[Validate('required|string', as: 'NPP')]
     public string $npp = '';
 
-    #[Validate('required|in:SD,SMP,SMA')]
+    #[Validate('required|in:SD,SMP,SMA', as: 'jenis sekolah')]
     public string $school_type = 'SD';
 
     public ?Registration $registration = null;
