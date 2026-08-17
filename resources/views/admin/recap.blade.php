@@ -11,6 +11,14 @@
                 margin: 0;
                 padding: 1.5cm 1.2cm;
             }
+
+            /* Tanpa ini, browser menghapus semua warna latar (badge jenjang, status,
+               dsb) saat mencetak kecuali opsi "Background graphics" dicentang manual
+               oleh pengguna di dialog print. */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
     </style>
 

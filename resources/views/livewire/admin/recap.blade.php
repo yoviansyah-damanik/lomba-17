@@ -6,7 +6,7 @@
     ];
 @endphp
 
-<div class="space-y-4">
+<div class="space-y-4" x-data x-on:trigger-print.window="setTimeout(() => window.print(), 150)">
     @if (!$competition)
         <div
             class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-100 dark:ring-gray-700 rounded-2xl p-10 text-center text-gray-500 dark:text-gray-400">
@@ -34,6 +34,16 @@
                     class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-xs text-gray-700 dark:text-gray-200 uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-gray-700">
                     {{ __('Cetak') }}
                 </button>
+                <button type="button" wire:click="printAllTypes" title="{{ __('Cetak seluruh jenjang (SD, SMP, SMA) sekaligus, terlepas dari filter yang aktif') }}"
+                    class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-xs text-gray-700 dark:text-gray-200 uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-gray-700">
+                    {{ __('Cetak Semua Jenjang') }}
+                </button>
+                @if ($school_type !== '')
+                    <button type="button" wire:click="openBeritaAcara"
+                        class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-xs text-gray-700 dark:text-gray-200 uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-gray-700">
+                        {{ __('Cetak Berita Acara') }}
+                    </button>
+                @endif
                 <x-primary-button type="button" wire:click="downloadPdf" wire:loading.attr="disabled"
                     class="uppercase tracking-widest text-xs">
                     <span wire:loading.remove wire:target="downloadPdf">{{ __('Unduh PDF') }}</span>
@@ -118,14 +128,14 @@
                                     title="{{ $criterion->description }}">{{ $criterion->name }}</th>
                             @endforeach
                             <th class="px-4 py-3 text-right whitespace-nowrap">{{ __('Total') }}</th>
-                            <th class="px-4 py-3 whitespace-nowrap print:hidden">{{ __('Status') }}</th>
+                            <th class="px-4 py-3 whitespace-nowrap">{{ __('Status') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                         @foreach ($rows as $row)
                             <tr>
                                 <td class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">
-                                    {{ $loop->iteration }}
+                                    {{ \App\Livewire\Admin\Recap::rankLabel($loop->iteration) }}
                                     @if ($row->is_tied)
                                         <button type="button"
                                             wire:click="openTieOrder('{{ $row->registration->school_type }}', {{ (int) $row->total_score }})"
@@ -212,7 +222,7 @@
                                 @endforeach
                                 <td class="px-4 py-3 text-right text-lg font-bold text-red-600 dark:text-red-400">
                                     {{ $row->total_score }}</td>
-                                <td class="px-4 py-3 print:hidden">
+                                <td class="px-4 py-3">
                                     @if ($row->is_complete)
                                         <span
                                             class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">{{ __('Lengkap') }}</span>
@@ -286,6 +296,45 @@
                     </div>
                 </form>
             @endif
+        </x-simple-modal>
+
+        <x-simple-modal :show="$showBeritaAcaraModal" show-property="showBeritaAcaraModal">
+            <form wire:submit="downloadBeritaAcara" class="space-y-4">
+                <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ __('Cetak Berita Acara') }}</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ __('Dokumen resmi berisi Juara I-III dan Harapan I-III untuk jenjang :type pada :name.', ['type' => $school_type, 'name' => $competition->name]) }}
+                </p>
+
+                <div>
+                    <x-input-label for="beritaAcaraTempat" :value="__('Tempat')" />
+                    <x-text-input wire:model="beritaAcaraTempat" id="beritaAcaraTempat" class="block mt-1 w-full"
+                        type="text" placeholder="{{ __('Contoh: Padangsidimpuan') }}" required autocomplete="off" />
+                    <x-input-error :messages="$errors->get('beritaAcaraTempat')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="beritaAcaraTanggal" :value="__('Tanggal')" />
+                    <x-text-input wire:model="beritaAcaraTanggal" id="beritaAcaraTanggal" class="block mt-1 w-full"
+                        type="date" required />
+                    <x-input-error :messages="$errors->get('beritaAcaraTanggal')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="beritaAcaraKoordinator" :value="__('Nama Koordinator Dewan Juri')" />
+                    <x-text-input wire:model="beritaAcaraKoordinator" id="beritaAcaraKoordinator"
+                        class="block mt-1 w-full" type="text" required autocomplete="off" />
+                    <x-input-error :messages="$errors->get('beritaAcaraKoordinator')" class="mt-2" />
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <x-secondary-button type="button"
+                        wire:click="closeBeritaAcara">{{ __('Batal') }}</x-secondary-button>
+                    <x-primary-button type="submit" wire:loading.attr="disabled" wire:target="downloadBeritaAcara">
+                        <span wire:loading.remove wire:target="downloadBeritaAcara">{{ __('Cetak PDF') }}</span>
+                        <span wire:loading wire:target="downloadBeritaAcara">{{ __('Menyiapkan...') }}</span>
+                    </x-primary-button>
+                </div>
+            </form>
         </x-simple-modal>
 
         <x-simple-modal :show="(bool) $detailRegistrationId" show-property="detailRegistrationId" max-width="max-w-2xl">

@@ -7,6 +7,7 @@ use App\Models\Criterion;
 use App\Models\Registration;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
@@ -31,6 +32,14 @@ class Recap extends Component
 
     public ?string $detailRegistrationId = null;
 
+    public bool $showBeritaAcaraModal = false;
+
+    public string $beritaAcaraTempat = '';
+
+    public string $beritaAcaraTanggal = '';
+
+    public string $beritaAcaraKoordinator = '';
+
     public function mount(string $competitionId): void
     {
         $this->competitionId = $competitionId;
@@ -38,6 +47,114 @@ class Recap extends Component
         if ($this->school_type !== '' && ! in_array($this->school_type, self::SCHOOL_TYPES, true)) {
             $this->school_type = '';
         }
+    }
+
+    public function printAllTypes(): void
+    {
+        $this->school_type = '';
+        $this->dispatch('trigger-print');
+    }
+
+    /**
+     * Peringkat 4-6 ditampilkan sebagai "Harapan 1-3", sesuai konvensi
+     * penamaan juara pada lomba pramuka/sekolah.
+     */
+    public static function rankLabel(int $rank): string
+    {
+        if ($rank >= 4 && $rank <= 6) {
+            return __('Harapan :n', ['n' => $rank - 3]);
+        }
+
+        return (string) $rank;
+    }
+
+    /** Peringkat 1-6 dalam format berita acara resmi: "JUARA I..III" lalu "HARAPAN I..III". */
+    public static function beritaAcaraRankLabel(int $rank): string
+    {
+        $romans = [1 => 'I', 2 => 'II', 3 => 'III'];
+
+        if ($rank >= 1 && $rank <= 3) {
+            return 'JUARA '.$romans[$rank];
+        }
+
+        if ($rank >= 4 && $rank <= 6) {
+            return 'HARAPAN '.$romans[$rank - 3];
+        }
+
+        return (string) $rank;
+    }
+
+    public function openBeritaAcara(): void
+    {
+        if (! in_array($this->school_type, self::SCHOOL_TYPES, true)) {
+            return;
+        }
+
+        $this->beritaAcaraTanggal = now()->format('Y-m-d');
+        $this->showBeritaAcaraModal = true;
+    }
+
+    public function closeBeritaAcara(): void
+    {
+        $this->showBeritaAcaraModal = false;
+    }
+
+    public function downloadBeritaAcara()
+    {
+        $competition = $this->competition();
+
+        abort_unless($competition, 404);
+        abort_unless(in_array($this->school_type, self::SCHOOL_TYPES, true), 422);
+
+        $this->validate([
+            'beritaAcaraTempat' => ['required', 'string', 'max:255'],
+            'beritaAcaraTanggal' => ['required', 'date'],
+            'beritaAcaraKoordinator' => ['required', 'string', 'max:255'],
+        ], attributes: [
+            'beritaAcaraTempat' => __('tempat'),
+            'beritaAcaraTanggal' => __('tanggal'),
+            'beritaAcaraKoordinator' => __('nama koordinator'),
+        ]);
+
+        $pdf = Pdf::loadView('pdf.berita-acara', [
+            'competition' => $competition,
+            'schoolType' => $this->school_type,
+            'rows' => $this->beritaAcaraRows($competition, $this->school_type),
+            'tempat' => $this->beritaAcaraTempat,
+            'tanggal' => Carbon::parse($this->beritaAcaraTanggal),
+            'koordinator' => $this->beritaAcaraKoordinator,
+        ])->setPaper('a4', 'portrait');
+
+        $filename = collect([
+            'berita_acara',
+            Str::slug($competition->name, '_'),
+            Str::slug($this->school_type, '_'),
+            now()->format('Ymd_His'),
+        ])->implode('_').'.pdf';
+
+        $this->closeBeritaAcara();
+
+        return response()->streamDownload(
+            fn () => print ($pdf->output()),
+            $filename
+        );
+    }
+
+    private function beritaAcaraRows(Competition $competition, string $schoolType): Collection
+    {
+        $registrations = $competition->registrations()
+            ->where('school_type', $schoolType)
+            ->withSum('evaluations as total_score', 'score')
+            ->get();
+
+        $registrations = Registration::sortForRanking($registrations)->take(6)->values();
+
+        return $registrations->map(fn (Registration $registration, int $index) => (object) [
+            'no' => $index + 1,
+            'npp' => $registration->npp,
+            'rank_label' => self::beritaAcaraRankLabel($index + 1),
+            'total_score' => $registration->total_score ?? 0,
+        ]);
     }
 
     public function downloadPdf()

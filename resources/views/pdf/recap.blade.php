@@ -221,7 +221,7 @@
             <tbody>
                 @foreach ($rows as $row)
                     <tr>
-                        <td style="width:40px; text-align:center;">{{ $loop->iteration }}</td>
+                        <td style="width:40px; text-align:center;">{{ \App\Livewire\Admin\Recap::rankLabel($loop->iteration) }}</td>
                         <td>
                             @if ($maskIdentity)
                                 {{ __('Peserta :rank', ['rank' => $loop->iteration]) }}
