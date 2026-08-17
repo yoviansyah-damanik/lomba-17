@@ -125,6 +125,8 @@ class Recap extends Component
             'koordinator' => $this->beritaAcaraKoordinator,
         ])->setPaper('a4', 'portrait');
 
+        $this->stampFooter($pdf);
+
         $filename = collect([
             'berita_acara',
             Str::slug($competition->name, '_'),
